@@ -6,48 +6,75 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ContentServer {
     private static final AtomicLong lamportClock = new AtomicLong(0);
 
+   
     public static void main(String[] args) {
         if (args.length < 3) {
             System.out.println("Usage: java ContentServer <server> <port> <datafile>");
             return;
         }
+    
         String server = args[0];
         int port = Integer.parseInt(args[1]);
         String dataFile = args[2];
-
+    
+        try {
+            // Step 1: Parse the weather data file
+            JSONObject jsonData = parseWeatherFile(dataFile);
+            if (jsonData == null) {
+                System.out.println("Error: Failed to parse the weather data file.");
+                return;
+            }
+    
+            // Step 2: Prepare and send the PUT request to the server
+            sendPutRequest(server, port, jsonData);
+    
+        } catch (IOException e) {
+            logError("Unable to connect to the server", e);
+        }
+    }
+    
+    private static void sendPutRequest(String server, int port, JSONObject jsonData) throws IOException {
         try (Socket socket = new Socket(server, port);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-
-            lamportClock.incrementAndGet();
-            JSONObject jsonData = parseWeatherFile(dataFile);
-
-            if (jsonData != null) {
-                String jsonDataString = jsonData.toString(4); // Pretty print JSON
-                System.out.println("Sending JSON data:\n" + jsonDataString);  // Log what we're sending
-
-                // Send PUT request
-                out.println("PUT /weather.json HTTP/1.1");
-                out.println("Content-Type: application/json");
-                out.println("Content-Length: " + jsonDataString.length());
-                out.println();  // End of headers
-                out.println(jsonDataString);  // Send the actual JSON body
-                out.flush();  // Ensure everything is sent
-
-                // Read and print the server response
-                String responseLine;
-                while ((responseLine = in.readLine()) != null) {
-                    System.out.println(responseLine);  // Log the server response
-                }
-            } else {
-                System.out.println("Error: Failed to parse the weather data file.");
-            }
-
+    
+            lamportClock.incrementAndGet();  // Increment Lamport clock
+    
+            String jsonDataString = jsonData.toString(4);  // Pretty print JSON
+            System.out.println("Sending JSON data:\n" + jsonDataString);  // Log data
+    
+            // Send PUT request headers and body
+            sendRequestHeaders(out, jsonDataString);
+            out.println(jsonDataString);  // Send the JSON body
+            out.flush();  // Ensure everything is sent
+    
+            // Read and print the server response
+            logServerResponse(in);
+    
         } catch (IOException e) {
-            System.err.println("Error: Unable to connect to the server.");
-            e.printStackTrace();
+            throw new IOException("Error sending PUT request: " + e.getMessage(), e);
         }
     }
+    
+    private static void sendRequestHeaders(PrintWriter out, String jsonDataString) {
+        out.println("PUT /weather.json HTTP/1.1");
+        out.println("Content-Type: application/json");
+        out.println("Content-Length: " + jsonDataString.length());
+        out.println();  // End of headers
+    }
+    
+    private static void logServerResponse(BufferedReader in) throws IOException {
+        String responseLine;
+        while ((responseLine = in.readLine()) != null) {
+            System.out.println(responseLine);  // Log the server response
+        }
+    }
+    
+    private static void logError(String message, Exception e) {
+        System.err.println(message);
+        e.printStackTrace();
+    }
+    
 
     //Parse weather data from the input file
     private static JSONObject parseWeatherFile(String filePath) {
