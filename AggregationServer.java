@@ -10,22 +10,7 @@ public class AggregationServer {
     private static final ConcurrentHashMap<String, WeatherData> dataStore = new ConcurrentHashMap<>();
     private static final AtomicLong lamportClock = new AtomicLong(0);
 
-    // public static void main(String[] args) {
-    //     int port = args.length > 0 ? Integer.parseInt(args[0]) : DEFAULT_PORT;
-    //     try (ServerSocket serverSocket = new ServerSocket(port)) {
-    //         System.out.println("Aggregation server running on port " + port);
-    //         startDataExpunger();
-
-    //         while (true) {
-    //             Socket clientSocket = serverSocket.accept();
-    //             new Thread(() -> handleClientRequest(clientSocket)).start();
-    //         }
-    //     } catch (IOException e) {
-    //         System.err.println("Error starting server: " + e.getMessage());
-    //         e.printStackTrace();
-    //     }
-    // }
-    public static void main(String[] args) {
+        public static void main(String[] args) {
         int port = DEFAULT_PORT;
         if (args.length > 0) {
             port = Integer.parseInt(args[0]);
@@ -34,7 +19,7 @@ public class AggregationServer {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Aggregation server running on port " + port);
     
-            // Start the data expunger thread
+           
             startDataExpunger();
     
             while (true) {
@@ -48,25 +33,7 @@ public class AggregationServer {
         }
     }
     
-    // private static void handleClientRequest(Socket socket) {
-    //     try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-    //          PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
-
-    //         String request = in.readLine();
-    //         System.out.println("Received request: " + request);  // Log incoming requests
-
-    //         if (request != null && request.startsWith("GET")) {
-    //             handleGetRequest(out);
-    //         } else if (request != null && request.startsWith("PUT")) {
-    //             handlePutRequest(in, out);
-    //         } else {
-    //             out.println("HTTP/1.1 400 Bad Request");
-    //         }
-    //     } catch (IOException e) {
-    //         System.err.println("Error handling client request: " + e.getMessage());
-    //         e.printStackTrace();
-    //     }
-    // }
+   
     private static void handleClientRequest(Socket socket) {
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -104,10 +71,10 @@ public class AggregationServer {
         out.println("HTTP/1.1 400 Bad Request");
     }
     
-    private static void logError(String message, Exception e) {
-        System.err.println(message + e.getMessage());
-        e.printStackTrace();
-    }
+    // private static void logError(String message, Exception e) {
+    //     System.err.println(message + e.getMessage());
+    //     e.printStackTrace();
+    // }
     
     private static void handleGetRequest(PrintWriter out) {
         lamportClock.incrementAndGet();
@@ -123,57 +90,89 @@ public class AggregationServer {
         out.println(jsonResponse.toString(4));
     }
 
+    
     private static void handlePutRequest(BufferedReader in, PrintWriter out) throws IOException {
         lamportClock.incrementAndGet();
+    
+        try {
+            int contentLength = getContentLengthFromHeaders(in);
+    
+            if (contentLength == 0) {
+                handleBadRequest(out, "Content-Length is 0. No data to read.");
+                return;
+            }
+    
+            String requestBody = readRequestBody(in, contentLength);
+    
+            if (requestBody == null) {
+                handleBadRequest(out, "Mismatch in Content-Length and bytes read.");
+                return;
+            }
+    
+            processPutRequest(requestBody, out);
+    
+        } catch (IOException e) {
+            logError("Error processing PUT request: ", e);
+            out.println("HTTP/1.1 500 Internal Server Error");
+        }
+    }
+    
+    private static int getContentLengthFromHeaders(BufferedReader in) throws IOException {
         String line;
         int contentLength = 0;
-
-        // Step 1: Read headers to find Content-Length
+    
+        // Read headers and find Content-Length
         while (!(line = in.readLine()).isEmpty()) {
             if (line.startsWith("Content-Length:")) {
                 contentLength = Integer.parseInt(line.split(":")[1].trim());
             }
         }
-
-        // Log the content length and validate
         System.out.println("Content-Length received: " + contentLength);
-
-        if (contentLength == 0) {
-            System.err.println("Error: Content-Length is 0. No data to read.");
-            out.println("HTTP/1.1 400 Bad Request");
-            return;
-        }
-
-        // Step 2: Read the body based on Content-Length
+    
+        return contentLength;
+    }
+    
+    private static String readRequestBody(BufferedReader in, int contentLength) throws IOException {
         char[] body = new char[contentLength];
         int bytesRead = in.read(body, 0, contentLength);
+    
         if (bytesRead != contentLength) {
-            System.err.println("Error: Mismatch in Content-Length and bytes read.");
-            out.println("HTTP/1.1 400 Bad Request");
-            return;
+            return null;  // Mismatch in content length and bytes read
         }
-
-        String jsonString = new String(body);
-
+        return new String(body);
+    }
+    
+    private static void processPutRequest(String jsonString, PrintWriter out) {
         try {
-            // Parse the JSON data
             System.out.println("Received PUT request with JSON: " + jsonString);
             JSONObject jsonObject = new JSONObject(jsonString);
+    
             String id = jsonObject.getString("id");
-
-            // Store the weather data with a timestamp
-            dataStore.put(id, new WeatherData(jsonObject, System.currentTimeMillis()));
+            dataStore.put(id, new WeatherData(jsonObject, System.currentTimeMillis()));  // Store the weather data
+    
             System.out.println("Storing weather data with ID: " + id);
-
-            // Send success response
             out.println("HTTP/1.1 201 Created");
+    
         } catch (Exception e) {
-            // Log the error if something goes wrong
             System.err.println("Error processing PUT request: " + e.getMessage());
             e.printStackTrace();
             out.println("HTTP/1.1 500 Internal Server Error");
         }
     }
+    
+    private static void handleBadRequest(PrintWriter out, String message) {
+        System.err.println("Error: " + message);
+        out.println("HTTP/1.1 400 Bad Request");
+    }
+    
+    private static void logError(String message, Exception e) {
+        System.err.println(message + e.getMessage());
+        e.printStackTrace();
+    }
+    
+
+    
+
 
     // A scheduled task that removes old data after 30 seconds
     private static void startDataExpunger() {
