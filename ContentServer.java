@@ -4,7 +4,7 @@ import org.json.JSONObject;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ContentServer {
-    private static final AtomicLong lamportClock = new AtomicLong(0);
+    private static final AtomicLong lamportClock = new AtomicLong(0)
 
     public static void main(String[] args) {
         if (args.length < 3) {
