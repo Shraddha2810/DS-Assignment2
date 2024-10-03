@@ -1,0 +1,18 @@
+"id": "IDS60902",
+"name": "Perth (Mount Lawley / Boorloo)",
+"state": "WA",
+"time_zone": "AWST",
+"lat": -31.9505,
+"lon": 115.8605,
+"local_date_time": "15/02:00pm",
+"local_date_time_full": "20230715140000",
+"air_temp": 20.5,
+"apparent_t": 19.0,
+"cloud": "Mostly sunny",
+"dewpt": 12.2,
+"press": 1017.4,
+"rel_hum": 55,
+"wind_dir": "SW",
+"wind_spd_kmh": 20,
+"wind_spd_kt": 11
+
