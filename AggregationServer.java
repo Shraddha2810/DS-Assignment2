@@ -10,42 +10,105 @@ public class AggregationServer {
     private static final ConcurrentHashMap<String, WeatherData> dataStore = new ConcurrentHashMap<>();
     private static final AtomicLong lamportClock = new AtomicLong(0);
 
+    // public static void main(String[] args) {
+    //     int port = args.length > 0 ? Integer.parseInt(args[0]) : DEFAULT_PORT;
+    //     try (ServerSocket serverSocket = new ServerSocket(port)) {
+    //         System.out.println("Aggregation server running on port " + port);
+    //         startDataExpunger();
+
+    //         while (true) {
+    //             Socket clientSocket = serverSocket.accept();
+    //             new Thread(() -> handleClientRequest(clientSocket)).start();
+    //         }
+    //     } catch (IOException e) {
+    //         System.err.println("Error starting server: " + e.getMessage());
+    //         e.printStackTrace();
+    //     }
+    // }
     public static void main(String[] args) {
-        int port = args.length > 0 ? Integer.parseInt(args[0]) : DEFAULT_PORT;
+        int port = DEFAULT_PORT;
+        if (args.length > 0) {
+            port = Integer.parseInt(args[0]);
+        }
+    
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Aggregation server running on port " + port);
+    
+            // Start the data expunger thread
             startDataExpunger();
-
+    
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                new Thread(() -> handleClientRequest(clientSocket)).start();
+                Runnable clientHandler = () -> handleClientRequest(clientSocket);
+                new Thread(clientHandler).start();
             }
         } catch (IOException e) {
-            System.err.println("Error starting server: " + e.getMessage());
+            System.err.println("Failed to start the server: " + e.getMessage());
             e.printStackTrace();
         }
     }
+    
+    // private static void handleClientRequest(Socket socket) {
+    //     try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    //          PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
+    //         String request = in.readLine();
+    //         System.out.println("Received request: " + request);  // Log incoming requests
+
+    //         if (request != null && request.startsWith("GET")) {
+    //             handleGetRequest(out);
+    //         } else if (request != null && request.startsWith("PUT")) {
+    //             handlePutRequest(in, out);
+    //         } else {
+    //             out.println("HTTP/1.1 400 Bad Request");
+    //         }
+    //     } catch (IOException e) {
+    //         System.err.println("Error handling client request: " + e.getMessage());
+    //         e.printStackTrace();
+    //     }
+    // }
     private static void handleClientRequest(Socket socket) {
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
-
+        try {
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+    
             String request = in.readLine();
-            System.out.println("Received request: " + request);  // Log incoming requests
-
-            if (request != null && request.startsWith("GET")) {
-                handleGetRequest(out);
-            } else if (request != null && request.startsWith("PUT")) {
-                handlePutRequest(in, out);
-            } else {
-                out.println("HTTP/1.1 400 Bad Request");
+            logRequest(request);  // Separate method for logging
+    
+            if (request != null) {
+                if (request.startsWith("GET")) {
+                    handleGetRequest(out);
+                } else if (request.startsWith("PUT")) {
+                    handlePutRequest(in, out);
+                } else {
+                    sendBadRequestResponse(out);
+                }
             }
+    
         } catch (IOException e) {
-            System.err.println("Error handling client request: " + e.getMessage());
-            e.printStackTrace();
+            logError("Error handling client request: ", e);
+        } finally {
+            try {
+                socket.close();  // Ensure socket is closed after handling
+            } catch (IOException e) {
+                System.err.println("Error closing socket: " + e.getMessage());
+            }
         }
     }
-
+    
+    private static void logRequest(String request) {
+        System.out.println("Received request: " + request);
+    }
+    
+    private static void sendBadRequestResponse(PrintWriter out) {
+        out.println("HTTP/1.1 400 Bad Request");
+    }
+    
+    private static void logError(String message, Exception e) {
+        System.err.println(message + e.getMessage());
+        e.printStackTrace();
+    }
+    
     private static void handleGetRequest(PrintWriter out) {
         lamportClock.incrementAndGet();
         JSONObject jsonResponse = new JSONObject();

@@ -1,17 +1,17 @@
-"id": "IDS60903",
-"name": "Melbourne (Olympic Park / Naarm)",
-"state": "VIC",
-"time_zone": "AEST",
-"lat": -37.8136,
-"lon": 144.9631,
-"local_date_time": "15/03:00pm",
-"local_date_time_full": "20230715150000",
-"air_temp": 17.8,
-"apparent_t": 16.0,
-"cloud": "Overcast",
-"dewpt": 11.5,
-"press": 1020.1,
-"rel_hum": 65,
-"wind_dir": "SE",
-"wind_spd_kmh": 18,
-"wind_spd_kt": 10
+id: IDS60903
+name: Melbourne (Olympic Park / Naarm)
+state: VIC
+time_zone: AEST
+lat: -37.8136
+lon: 144.9631
+local_date_time: 15/03:00pm
+local_date_time_full: 20230715150000
+air_temp: 17.8
+apparent_t: 16.0
+cloud: Overcast
+dewpt: 11.5
+press: 1020.1
+rel_hum: 65
+wind_dir: SE
+wind_spd_kmh: 18
+wind_spd_kt: 10
