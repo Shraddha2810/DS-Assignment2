@@ -142,10 +142,51 @@ public class AggregationServer {
         return new String(body);
     }
     
+    // private static void processPutRequest(String jsonString, PrintWriter out) {
+    //     try {
+    //         System.out.println("Received PUT request with JSON: " + jsonString);
+    //         JSONObject jsonObject = new JSONObject(jsonString);
+    
+    //         String id = jsonObject.getString("id");
+    //         dataStore.put(id, new WeatherData(jsonObject, System.currentTimeMillis()));  // Store the weather data
+    
+    //         System.out.println("Storing weather data with ID: " + id);
+    //         out.println("HTTP/1.1 201 Created");
+    
+    //     } catch (Exception e) {
+    //         System.err.println("Error processing PUT request: " + e.getMessage());
+    //         e.printStackTrace();
+    //         out.println("HTTP/1.1 500 Internal Server Error");
+    //     }
+    // }
+    
+    // private static void handleBadRequest(PrintWriter out, String message) {
+    //     System.err.println("Error: " + message);
+    //     out.println("HTTP/1.1 400 Bad Request");
+    // }
     private static void processPutRequest(String jsonString, PrintWriter out) {
         try {
             System.out.println("Received PUT request with JSON: " + jsonString);
+    
+            // Check for empty request body
+            if (jsonString.trim().isEmpty()) {
+                handleBadRequest(out, "Received empty PUT request.");
+                return;
+            }
+    
             JSONObject jsonObject = new JSONObject(jsonString);
+    
+            // Ensure the required "id" field is present
+            if (!jsonObject.has("id") || jsonObject.getString("id").isEmpty()) {
+                handleBadRequest(out, "Missing or empty 'id' field in the data.");
+                return;
+            }
+    
+            // Validate that there are enough fields in the weather data
+            if (jsonObject.length() < 3) {  // Assuming at least 3 fields are mandatory
+                handleBadRequest(out, "Insufficient data in the PUT request.");
+                return;
+            }
     
             String id = jsonObject.getString("id");
             dataStore.put(id, new WeatherData(jsonObject, System.currentTimeMillis()));  // Store the weather data
@@ -163,7 +204,9 @@ public class AggregationServer {
     private static void handleBadRequest(PrintWriter out, String message) {
         System.err.println("Error: " + message);
         out.println("HTTP/1.1 400 Bad Request");
+        out.println("Error-Message: " + message);
     }
+    
     
     private static void logError(String message, Exception e) {
         System.err.println(message + e.getMessage());
@@ -202,3 +245,12 @@ public class AggregationServer {
         }
     }
 }
+
+
+
+
+
+
+
+
+
