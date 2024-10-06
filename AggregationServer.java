@@ -71,10 +71,6 @@ public class AggregationServer {
         out.println("HTTP/1.1 400 Bad Request");
     }
     
-    // private static void logError(String message, Exception e) {
-    //     System.err.println(message + e.getMessage());
-    //     e.printStackTrace();
-    // }
     
     private static void handleGetRequest(PrintWriter out) {
         lamportClock.incrementAndGet();
@@ -142,28 +138,7 @@ public class AggregationServer {
         return new String(body);
     }
     
-    // private static void processPutRequest(String jsonString, PrintWriter out) {
-    //     try {
-    //         System.out.println("Received PUT request with JSON: " + jsonString);
-    //         JSONObject jsonObject = new JSONObject(jsonString);
     
-    //         String id = jsonObject.getString("id");
-    //         dataStore.put(id, new WeatherData(jsonObject, System.currentTimeMillis()));  // Store the weather data
-    
-    //         System.out.println("Storing weather data with ID: " + id);
-    //         out.println("HTTP/1.1 201 Created");
-    
-    //     } catch (Exception e) {
-    //         System.err.println("Error processing PUT request: " + e.getMessage());
-    //         e.printStackTrace();
-    //         out.println("HTTP/1.1 500 Internal Server Error");
-    //     }
-    // }
-    
-    // private static void handleBadRequest(PrintWriter out, String message) {
-    //     System.err.println("Error: " + message);
-    //     out.println("HTTP/1.1 400 Bad Request");
-    // }
     private static void processPutRequest(String jsonString, PrintWriter out) {
         try {
             System.out.println("Received PUT request with JSON: " + jsonString);
@@ -213,9 +188,6 @@ public class AggregationServer {
         e.printStackTrace();
     }
     
-
-    
-
 
     // A scheduled task that removes old data after 30 seconds
     private static void startDataExpunger() {
