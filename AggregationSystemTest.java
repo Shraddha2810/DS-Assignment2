@@ -14,7 +14,6 @@ public class AggregationSystemTest {
 
     @BeforeClass
     public static void setUpServer() throws Exception {
-        // Start the AggregationServer in a separate thread before all tests
         executorService = Executors.newSingleThreadExecutor();
         executorService.submit(() -> {
             try {
@@ -24,19 +23,16 @@ public class AggregationSystemTest {
             }
         });
 
-        // Allow the server time to start
         Thread.sleep(2000);
     }
 
     @AfterClass
     public static void tearDownServer() throws Exception {
-        // Shut down the server after all tests
         executorService.shutdown();
     }
 
     @Before
     public void createTestDataFile() throws IOException {
-        // Create a test weather data file before each test
         PrintWriter writer = new PrintWriter(new FileWriter(TEST_WEATHER_FILE));
         writer.println("id:TEST123");
         writer.println("name: TestLocation");
@@ -58,106 +54,23 @@ public class AggregationSystemTest {
         writer.close();
     }
 
-    // ============== UNIT TESTS ==============
     @Test
     public void testPUTRequest() throws IOException, InterruptedException {
-        // Simulate ContentServer sending a PUT request
         String[] contentServerArgs = {SERVER_ADDRESS, String.valueOf(TEST_PORT), TEST_WEATHER_FILE};
         ContentServer.main(contentServerArgs);
 
-        // Allow time for the server to process the request
         Thread.sleep(1000);
 
-        // Simulate GETClient retrieving the data
         String response = simulateGETRequest(SERVER_ADDRESS, TEST_PORT);
 
-        // Validate the response contains the expected data
+       
         assertTrue("Response should contain 'TEST123'", response.contains("TEST123"));
         assertTrue("Response should contain 'TestLocation'", response.contains("TestLocation"));
         assertTrue("Response should contain '13.3'", response.contains("13.3"));
     }
 
-    // ============== EDGE CASE TESTS ==============
+    // EDGE CASE TESTS 
 
-    // @Test
-    // public void testEmptyFilePUTRequest() throws IOException, InterruptedException {
-    //     // Create an empty file for testing
-    //     PrintWriter writer = new PrintWriter(new FileWriter(TEST_WEATHER_FILE));
-    //     writer.close();
-
-    //     // Simulate ContentServer sending a PUT request with an empty file
-    //     String[] contentServerArgs = {SERVER_ADDRESS, String.valueOf(TEST_PORT), TEST_WEATHER_FILE};
-    //     ContentServer.main(contentServerArgs);
-
-    //     // Allow time for the server to process the request
-    //     Thread.sleep(1000);
-
-    //     // Simulate GETClient retrieving the data (no data should be stored)
-    //     String response = simulateGETRequest(SERVER_ADDRESS, TEST_PORT);
-    //     assertFalse("Server should not store any data from empty file", response.contains("TEST123"));
-    // }
-
-    @Test
-    public void testEmptyFilePUTRequest() throws IOException, InterruptedException {
-    // Create an empty file for testing
-    PrintWriter writer = new PrintWriter(new FileWriter(TEST_WEATHER_FILE));
-    writer.close();
-
-    // Simulate ContentServer sending a PUT request with an empty file
-    String[] contentServerArgs = {SERVER_ADDRESS, String.valueOf(TEST_PORT), TEST_WEATHER_FILE};
-    ContentServer.main(contentServerArgs);
-
-    // Allow time for the server to process the request
-    Thread.sleep(1000);
-
-    // Simulate GETClient retrieving the data (no data should be stored)
-    String response = simulateGETRequest(SERVER_ADDRESS, TEST_PORT);
-    
-    // Assert that no data was stored since the file was empty
-    assertFalse("Server should not store any data from empty file", response.contains("TEST123"));
-}
-    @Test
-    public void testMissingFieldsPUTRequest() throws IOException, InterruptedException {
-    // Create a file with missing fields (e.g., no "id" field)
-    PrintWriter writer = new PrintWriter(new FileWriter(TEST_WEATHER_FILE));
-    writer.println("name: TestLocation");
-    writer.println("state: TestState");
-    writer.close();
-
-    // Simulate ContentServer sending a PUT request with missing fields
-    String[] contentServerArgs = {SERVER_ADDRESS, String.valueOf(TEST_PORT), TEST_WEATHER_FILE};
-    ContentServer.main(contentServerArgs);
-
-    // Allow time for the server to process the request
-    Thread.sleep(1000);
-
-    // Simulate GETClient retrieving the data (should reject or not store)
-    String response = simulateGETRequest(SERVER_ADDRESS, TEST_PORT);
-
-    // Assert that the server did not store the incomplete data
-    assertFalse("Server should reject or not store data with missing fields", response.contains("TestLocation"));
-}
-
-
-    // @Test
-    // public void testMissingFieldsPUTRequest() throws IOException, InterruptedException {
-    //     // Create a file with missing fields (e.g., no "id" field)
-    //     PrintWriter writer = new PrintWriter(new FileWriter(TEST_WEATHER_FILE));
-    //     writer.println("name: TestLocation");
-    //     writer.println("state: TestState");
-    //     writer.close();
-
-    //     // Simulate ContentServer sending a PUT request with missing fields
-    //     String[] contentServerArgs = {SERVER_ADDRESS, String.valueOf(TEST_PORT), TEST_WEATHER_FILE};
-    //     ContentServer.main(contentServerArgs);
-
-    //     // Allow time for the server to process the request
-    //     Thread.sleep(1000);
-
-    //     // Simulate GETClient retrieving the data (should reject or not store)
-    //     String response = simulateGETRequest(SERVER_ADDRESS, TEST_PORT);
-    //     assertFalse("Server should reject or not store data with missing fields", response.contains("TestLocation"));
-    // }
 
     @Test
     public void testLargeDataPUTRequest() throws IOException, InterruptedException {
@@ -182,7 +95,7 @@ public class AggregationSystemTest {
         assertTrue("Server should store large amount of data", response.contains("TEST9999"));
     }
 
-    // ============== INTEGRATION TESTS ==============
+    // INTEGRATION TESTS
     @Test
     public void testIntegrationPUTAndGET() throws IOException, InterruptedException {
         // Integration test that simulates the ContentServer and GETClient
@@ -197,7 +110,7 @@ public class AggregationSystemTest {
         // Simulate GETClient retrieving the data
         String response = simulateGETRequest(SERVER_ADDRESS, TEST_PORT);
 
-        // Check if GETClient correctly fetches the data sent by the ContentServer
+        // Check if GETClient correctly fetches the data which is sent by the ContentServer
         assertTrue("Response should contain 'TEST123'", response.contains("TEST123"));
     }
     @Test
@@ -207,7 +120,7 @@ public class AggregationSystemTest {
     writer.println("{invalidJson: value}");
     writer.close();
 
-    // Simulate ContentServer sending a PUT request with invalid JSON
+    // ContentServer sending a PUT request with invalid JSON
     String[] contentServerArgs = {SERVER_ADDRESS, String.valueOf(TEST_PORT), TEST_WEATHER_FILE};
     ContentServer.main(contentServerArgs);
 
@@ -222,15 +135,15 @@ public class AggregationSystemTest {
 }
 
 
-    // ============== HELPER METHODS ==============
-    // Simulate the GETClient sending a GET request and retrieving the data
+    // HELPER METHODS 
+    //GETClient sending a GET request and retrieving the data
     private String simulateGETRequest(String server, int port) throws IOException {
         StringBuilder response = new StringBuilder();
         try (Socket socket = new Socket(server, port);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
-            // Send the GET request
+            
             out.println("GET /weather.json HTTP/1.1");
             out.println();  // End of headers
 
